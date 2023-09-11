@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { SearchBarContainer } from './Searchbar.styled';
 import { Formik } from 'formik';
@@ -10,55 +10,43 @@ import {
   Icon,
 } from './Searchbar.styled';
 
-class Searchbar extends Component {
-  state = {
-    queryValue: '',
+export default function Searchbar({ onSubmit }) {
+  const [queryValue, setQueryValue] = useState('');
+
+  const initialValue = useRef({ query: '' });
+
+  const handleInputChange = e => {
+    setQueryValue(e.target.value)
   };
 
-  initialValue = {
-    query: '',
-  };
-
-  handleInputChange = e => {
-    this.setState({ queryValue: e.target.value });
-  };
-
-  handleSubmit = () => {
-    const { onSubmit } = this.props;
-    const { queryValue } = this.state;
+  const handleSubmit = () => {
     onSubmit(queryValue);
-    this.setState({ queryValue: '' });
+    setQueryValue('')
   };
 
-  render() {
-    const { queryValue } = this.state;
+  return (
+    <SearchBarContainer>
+      <Formik initialValues={initialValue.current} onSubmit={handleSubmit}>
+        <SearchForm>
+          <SearchFormBtn type="submit">
+            <Icon width="20" height="20" />
+            <BtnLabel>Search</BtnLabel>
+          </SearchFormBtn>
 
-    return (
-      <SearchBarContainer>
-        <Formik initialValues={this.initialValue} onSubmit={this.handleSubmit}>
-          <SearchForm>
-            <SearchFormBtn type="submit">
-              <Icon width="20" height="20" />
-              <BtnLabel>Search</BtnLabel>
-            </SearchFormBtn>
-
-            <Input
-              value={queryValue}
-              onChange={this.handleInputChange}
-              name="query"
-              type="text"
-              autoComplete="off"
-              autoFocus
-              placeholder="Search images and photos"
-            />
-          </SearchForm>
-        </Formik>
-      </SearchBarContainer>
-    );
-  }
+          <Input
+            value={queryValue}
+            onChange={handleInputChange}
+            name="query"
+            type="text"
+            autoComplete="off"
+            autoFocus
+            placeholder="Search images and photos"
+          />
+        </SearchForm>
+      </Formik>
+    </SearchBarContainer>
+  );
 }
-
-export default Searchbar;
 
 Searchbar.propTypes = {
   onSubmit: PropTypes.func.isRequired,

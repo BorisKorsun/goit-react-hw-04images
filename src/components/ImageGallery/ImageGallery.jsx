@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 
 import API from 'service';
@@ -18,99 +18,85 @@ const STATE_MACHINE = {
   RESOLVED: 'resolved',
 };
 
-class ImageGallery extends Component {
-  state = {
-    gallery: [],
-    page: 1,
-    showModal: false,
-    imageId: null,
-    modalCardUrl: '',
-    error: null,
-    status: STATE_MACHINE.IDLE,
+export default function ImageGallery({ query }) {
+
+  const [page, setPage] = useState(1);
+  const [gallery, setGallery] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [imageId, setImageId] = useState(null);
+  const [modalCardUrl, setModalCardUrl] = useState('');
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState(STATE_MACHINE.IDLE);
+
+  useEffect(() => {
+    if (!query) {
+      return
+    }
+    setStatus(STATE_MACHINE.PENDING);
+    service
+      .getQueryImages(query)
+      .then(({ data }) => {
+        setGallery(data.hits);
+        setStatus(STATE_MACHINE.RESOLVED);
+      })
+      .catch(error => {
+        setError(error);
+        setStatus(STATE_MACHINE.REJECTED);
+      });
+  }, [query]);
+
+  useEffect(() => {
+    if (!query) {
+      return
+    }
+    setStatus(STATE_MACHINE.PENDING);
+    service
+      .getPageImage(page)
+      .then(({ data }) => {
+        setGallery(p => [...p, ...data.hits]);
+        setStatus(STATE_MACHINE.RESOLVED);
+      })
+      .catch(error => {
+        setError(error);
+        setStatus(STATE_MACHINE.REJECTED);
+      });
+  }, [page]);
+
+  const onLoadMoreClick = () => {
+    setPage(p => p + 1);
   };
 
-  componentDidUpdate(prevProps, prevState) {
-    const { page } = this.state;
-    const oldPage = prevState.page;
-    const { query } = this.props;
-    const oldQuery = prevProps.query;
+  const onImageClick = imageId => {
+    toggleModal();
+    setModalCardUrl(gallery.find(({ id }) => id === imageId).largeImageURL);
+  };
 
-    if (query !== oldQuery) {
-      this.setState({ status: STATE_MACHINE.PENDING });
-      service
-        .getQueryImages(query)
-        .then(({ data }) =>
-          this.setState({ gallery: data.hits, status: STATE_MACHINE.RESOLVED })
-        )
-        .catch(error =>
-          this.setState({ error, status: STATE_MACHINE.REJECTED })
-        );
-    }
+  const toggleModal = () => {
+    setShowModal(p => !p);
+  };
 
-    if (page !== oldPage) {
-      this.setState({ status: STATE_MACHINE.PENDING });
-      service
-        .getPageImage(page)
-        .then(({ data }) =>
-          this.setState(prev => {
-            return {
-              gallery: [...prev.gallery, ...data.hits],
-              status: STATE_MACHINE.RESOLVED,
-            };
-          })
-        )
-        .catch(error =>
-          this.setState({ error, status: STATE_MACHINE.REJECTED })
-        );
-    }
+
+  if (status === STATE_MACHINE.PENDING) {
+    return <GalleryPendingView cards={gallery} />;
   }
 
-  onLoadMoreClick = () => {
-    this.setState(prev => {
-      return { page: prev.page + 1 };
-    });
-  };
+  if (status === STATE_MACHINE.REJECTED) {
+    return <GalleryRejectedView errorMessage={error} />;
+  }
 
-  onImageClick = imageId => {
-    const { gallery } = this.state;
-
-    this.toggleModal();
-    this.setState({modalCardUrl: gallery.find(({ id }) => id === imageId).largeImageURL});
-  };
-
-  toggleModal = () => {
-    this.setState(prev => {
-      return { showModal: !prev.showModal };
-    });
-  };
-
-  render() {
-    const { status, gallery, error, showModal, modalCardUrl } = this.state;
-
-    if (status === STATE_MACHINE.PENDING) {
-      return <GalleryPendingView cards={gallery} />;
-    }
-
-    if (status === STATE_MACHINE.REJECTED) {
-      return <GalleryRejectedView errorMessage={error} />;
-    }
-
-    if (status === STATE_MACHINE.RESOLVED) {
-      return (
-        <GalleryResolvedView
-          toggleModal={this.toggleModal}
-          onImageClick={this.onImageClick}
-          onBtnClick={this.onLoadMoreClick}
-          cards={gallery}
-          isModalShown={showModal}
-          modalCard={modalCardUrl}
-        />
-      );
-    }
+  if (status === STATE_MACHINE.RESOLVED) {
+    return (
+      <GalleryResolvedView
+        toggleModal={toggleModal}
+        onImageClick={onImageClick}
+        onBtnClick={onLoadMoreClick}
+        cards={gallery}
+        isModalShown={showModal}
+        modalCard={modalCardUrl}
+      />
+    );
   }
 }
-
-export default ImageGallery;
 
 ImageGallery.propTypes = {
   query: PropTypes.string.isRequired,
