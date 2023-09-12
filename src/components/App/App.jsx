@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import { AppContainer } from './App.styled';
 
@@ -10,18 +12,25 @@ class App extends Component {
     queryName: '',
   };
 
-  handleFormSubmit = (queryName) => {
-    this.setState({queryName,})
-  }
+  handleFormSubmit = queryName => {
+    if (!queryName) {
+      toast.error('Please enter your query');
+    }
+    this.setState({ queryName });
+  };
 
   render() {
-    const {queryName }= this.state; 
+    const { queryName } = this.state;
 
     return (
-      <AppContainer>
-        <Searchbar onSubmit={this.handleFormSubmit}/>
-        <ImageGallery query={queryName}/>
-      </AppContainer>
+      <>
+        <Searchbar onSubmit={this.handleFormSubmit} />
+        <AppContainer>
+          <ToastContainer />
+
+          <ImageGallery query={queryName} />
+        </AppContainer>
+      </>
     );
   }
 }

@@ -23,7 +23,6 @@ export default function ImageGallery({ query }) {
   const [page, setPage] = useState(1);
   const [gallery, setGallery] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [imageId, setImageId] = useState(null);
   const [modalCardUrl, setModalCardUrl] = useState('');
   const [error, setError] = useState(null);
   const [status, setStatus] = useState(STATE_MACHINE.IDLE);
